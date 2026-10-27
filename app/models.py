@@ -143,3 +143,12 @@ class LegacyAccessLog(db.Model):
     username = db.Column(db.String(80))  # "ops_shared" = the shared account
     ip_address = db.Column(db.String(45))
     success = db.Column(db.Boolean, nullable=False)
+
+class LoginLog(db.Model):
+    __tablename__ = "login_logs"
+
+    id = db.Column(db.Integer, primary_key=True)
+    timestamp = db.Column(db.DateTime, default=utcnow, nullable=False)
+    username = db.Column(db.String(80), nullable=False)
+    ip_address = db.Column(db.String(45))
+    success = db.Column(db.Boolean, nullable=False)
