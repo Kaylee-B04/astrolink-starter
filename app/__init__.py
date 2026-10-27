@@ -31,12 +31,16 @@ def create_app():
 
     # Auth routes (login, register, logout) — provided for you
     from app.auth import auth_bp
+
     app.register_blueprint(auth_bp)
 
     # Your routes go here — register new blueprints below
     # Example:
     #   from app.your_feature import your_bp
     #   app.register_blueprint(your_bp)
+    from app.stations import stations_bp
+
+    app.register_blueprint(stations_bp)
 
     with app.app_context():
         db.create_all()
