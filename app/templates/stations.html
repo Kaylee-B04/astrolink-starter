@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header"><h1>Ground Stations</h1></div>
+<section class="panel">
+  <table>
+    <tr><th>Name</th><th>Location</th><th>Readings received</th></tr>
+    {% for g in stations %}
+    <tr><td>{{ g.name }}</td><td>{{ g.location }}</td><td>{{ g.telemetry|length }}</td></tr>
+    {% endfor %}
+  </table>
+</section>
+{% endblock %}
