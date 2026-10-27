@@ -42,9 +42,25 @@ def login():
         user = User.query.filter_by(username=username).first()
 
         if user and user.check_password(password):
+            log = LoginLog(
+            username=username,
+            ip_address=request.remote_addr,
+            success=True
+        )
+            db.session.add(log)
+            db.session.commit()
+
             login_user(user)
             flash(f"Logged in as {user.display_name or user.username}.", "success")
             return redirect(url_for("auth.home"))
+
+        log = LoginLog(
+            username=username,
+            ip_address=request.remote_addr,
+            success=False
+        )   
+        db.session.add(log)
+        db.session.commit()
 
         flash("Invalid username or password.", "danger")
 
