@@ -5,3 +5,6 @@ instance/
 *.db
 .DS_Store
 venv/
+# SSH private keys, help prevent accidentally committing private keys to Git
+*.pem
+*.key

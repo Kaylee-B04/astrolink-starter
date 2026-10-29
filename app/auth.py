@@ -43,10 +43,8 @@ def login():
 
         if user and user.check_password(password):
             log = LoginLog(
-            username=username,
-            ip_address=request.remote_addr,
-            success=True
-        )
+                username=username, ip_address=request.remote_addr, success=True
+            )
             db.session.add(log)
             db.session.commit()
 
@@ -54,11 +52,7 @@ def login():
             flash(f"Logged in as {user.display_name or user.username}.", "success")
             return redirect(url_for("auth.home"))
 
-        log = LoginLog(
-            username=username,
-            ip_address=request.remote_addr,
-            success=False
-        )   
+        log = LoginLog(username=username, ip_address=request.remote_addr, success=False)
         db.session.add(log)
         db.session.commit()
 
