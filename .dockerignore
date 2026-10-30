@@ -1,0 +1,12 @@
+# Helps keep local secrets, SSH keys, and unnecessary development files out of the Docker image.
+
+.git
+.gitignore
+.env
+.env.*
+*.pem
+*.key
+__pycache__/
+*.pyc
+venv/
+.DS_Store
