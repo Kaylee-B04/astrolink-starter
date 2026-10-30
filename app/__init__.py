@@ -27,7 +27,13 @@ def create_app():
 
     @login_manager.user_loader
     def load_user(user_id):
-        return db.session.get(User, int(user_id))
+        user = db.session.get(User, int(user_id))
+
+        # Reject existing sessions belonging to former employees.
+        if user and user.employment_status != "employed":
+            return None
+
+        return user
 
     # Auth routes (login, register, logout) — provided for you
     from app.auth import auth_bp
