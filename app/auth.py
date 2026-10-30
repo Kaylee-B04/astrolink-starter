@@ -97,12 +97,12 @@ def login_history():
     # Restrict access to administrators only.
     if not current_user.is_admin:
         abort(403)
-        
+
     # Show the newest login attempts first.
     logs = LoginLog.query.order_by(LoginLog.timestamp.desc()).limit(100).all()
 
-    # Temporary response until the dashboard is implemented.
-    return "Admin login history access granted."
+    # Display the login records using the HTML dashboard.
+    return render_template("login_history.html", logs=logs)
 
 @auth_bp.route("/logout")
 @login_required
