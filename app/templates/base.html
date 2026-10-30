@@ -13,9 +13,16 @@
     <nav>
         <div class="nav-left">
             <a href="/" class="logo">AstroLink</a>
+            
             <div class="nav-links">
-                {<a href="/stations">Stations</a>}
+                <a href="/stations">Stations</a>
+
+                <!-- Only administrators can see the Login History link. -->
+                {% if current_user.is_admin %}
+                <a href="{{ url_for('auth.login_history') }}">Login History</a>
+                {% endif %}
             </div>
+
         </div>
         <div class="nav-right">
             <span class="nav-user">{{ current_user.display_name or current_user.username }}</span>
