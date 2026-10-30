@@ -41,8 +41,12 @@ def login():
 
         user = User.query.filter_by(username=username).first()
 
-        if user and user.check_password(password):
-            log = LoginLog(
+        if (    # Only allow active employees with valid credentials to log in.
+            user
+            and user.employment_status == "employed"
+            and user.check_password(password)
+        ):
+            log = LoginLog(     # Record the successful login attempt.
                 username=username, ip_address=request.remote_addr, success=True
             )
             db.session.add(log)
@@ -52,6 +56,7 @@ def login():
             flash(f"Logged in as {user.display_name or user.username}.", "success")
             return redirect(url_for("auth.home"))
 
+        # Record failed logins, including attempts by former employees.
         log = LoginLog(username=username, ip_address=request.remote_addr, success=False)
         db.session.add(log)
         db.session.commit()
