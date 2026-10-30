@@ -41,7 +41,6 @@ class User(UserMixin, db.Model):
     created_at = db.Column(db.DateTime, default=utcnow)
 
     # Only administrators can access sensitive management features.
-    # Example: Only admins can access login history dashboard
     is_admin = db.Column(db.Boolean, nullable=False, default=False)
 
     def set_password(self, password):

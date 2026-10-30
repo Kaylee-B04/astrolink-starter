@@ -91,6 +91,15 @@ def register():
 
     return render_template("register.html")
 
+@auth_bp.route("/admin/login-history")
+@login_required
+def login_history():
+    # Restrict access to administrators only.
+    if not current_user.is_admin:
+        abort(403)
+
+    # Temporary response until the dashboard is implemented.
+    return "Admin login history access granted."
 
 @auth_bp.route("/logout")
 @login_required
