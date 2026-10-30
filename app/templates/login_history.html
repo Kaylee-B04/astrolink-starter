@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login History - AstroLink</title>
+
+    <style>
+        body {
+            background-color: #080808;
+            color: #e5e5e5;
+            font-family: Arial, sans-serif;
+            margin: 0;
+        }
+
+        header {
+            padding: 24px 40px;
+            border-bottom: 1px solid #292929;
+        }
+
+        header a {
+            color: #00bcd4;
+            text-decoration: none;
+        }
+
+        main {
+            max-width: 1100px;
+            margin: 50px auto;
+            padding: 0 24px;
+        }
+
+        h1 {
+            margin-bottom: 12px;
+        }
+
+        p {
+            color: #999;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 30px;
+        }
+
+        th, td {
+            padding: 15px;
+            border-bottom: 1px solid #292929;
+            text-align: left;
+        }
+
+        th {
+            color: #00bcd4;
+        }
+
+        .success {
+            color: #4ade80;
+        }
+
+        .failed {
+            color: #f87171;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <a href="{{ url_for('auth.home') }}">ASTROLINK</a>
+    </header>
+
+    <main>
+        <h1>Login History</h1>
+        <p>Recent employee login attempts (newest first).</p>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Username</th>
+                    <th>Date & Time (UTC)</th>
+                    <th>IP Address</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for log in logs %}
+                <tr>
+                    <td>{{ log.username }}</td>
+                    <td>{{ log.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                    <td>{{ log.ip_address or 'Unknown' }}</td>
+                    <td>
+                        {% if log.success %}
+                            <span class="success">Success</span>
+                        {% else %}
+                            <span class="failed">Failed</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="4">No login attempts recorded yet.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </main>
+</body>
+</html>

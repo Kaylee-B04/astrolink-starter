@@ -97,6 +97,9 @@ def login_history():
     # Restrict access to administrators only.
     if not current_user.is_admin:
         abort(403)
+        
+    # Show the newest login attempts first.
+    logs = LoginLog.query.order_by(LoginLog.timestamp.desc()).limit(100).all()
 
     # Temporary response until the dashboard is implemented.
     return "Admin login history access granted."
