@@ -106,8 +106,10 @@ def login_history():
     # Display the login records using the HTML dashboard.
     return render_template("login_history.html", logs=logs)
 
-@auth_bp.route("/logout")
+# Require a CSRF-protected POST request to log out.
+@auth_bp.route("/logout", methods=["POST"])
 @login_required
 def logout():
     logout_user()
+    flash("You have been logged out.", "success")
     return redirect(url_for("auth.login"))

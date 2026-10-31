@@ -8,6 +8,8 @@
         <p class="auth-subtitle">Satellite Operations Platform</p>
 
         <form method="POST">
+            <!-- Verify that this login request comes from our form. -->
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="form-group">
                 <label for="username">Username</label>
                 <input type="text" id="username" name="username" required autofocus>

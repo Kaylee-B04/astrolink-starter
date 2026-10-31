@@ -1,0 +1,4 @@
+astrolink-team6.duckdns.org {
+    encode gzip
+    reverse_proxy web:8000
+}

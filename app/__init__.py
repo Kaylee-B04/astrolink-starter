@@ -9,12 +9,19 @@ from flask_login import LoginManager
 from app.models import db, bcrypt, User
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+from werkzeug.middleware.proxy_fix import ProxyFix
+from flask_wtf.csrf import CSRFProtect
 
 # Track request limits using the client's IP address.
 limiter = Limiter(key_func=get_remote_address)
 
+# Protect forms against cross-site request forgery.
+csrf = CSRFProtect()
+
 def create_app():
     app = Flask(__name__)
+    # Trust client IP and HTTPS information from our single Caddy proxy.
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1)
 
     app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-key-change-me")
     app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get(
@@ -28,9 +35,16 @@ def create_app():
     # Prevent JavaScript from directly reading session cookies.
     app.config["SESSION_COOKIE_HTTPONLY"] = True
 
-    # Share rate-limit counters across Gunicorn workers using Redis.
-    app.config["RATELIMIT_STORAGE_URI"] = "redis://redis:6379/0"
+    # Require HTTPS when sending login session cookies.
+    app.config["SESSION_COOKIE_SECURE"] = True
 
+    # Use Redis in production, but allow isolated tests to use other storage.
+    app.config["RATELIMIT_STORAGE_URI"] = os.environ.get(
+        "RATELIMIT_STORAGE_URI",
+        "redis://redis:6379/0"
+    )
+
+    csrf.init_app(app)
     db.init_app(app)
     bcrypt.init_app(app)
     limiter.init_app(app)
