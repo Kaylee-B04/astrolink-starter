@@ -7,7 +7,11 @@ import os
 from flask import Flask
 from flask_login import LoginManager
 from app.models import db, bcrypt, User
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 
+# Track request limits using the client's IP address.
+limiter = Limiter(key_func=get_remote_address)
 
 def create_app():
     app = Flask(__name__)
@@ -24,8 +28,12 @@ def create_app():
     # Prevent JavaScript from directly reading session cookies.
     app.config["SESSION_COOKIE_HTTPONLY"] = True
 
+    # Share rate-limit counters across Gunicorn workers using Redis.
+    app.config["RATELIMIT_STORAGE_URI"] = "redis://redis:6379/0"
+
     db.init_app(app)
     bcrypt.init_app(app)
+    limiter.init_app(app)
 
     login_manager = LoginManager()
     login_manager.login_view = "auth.login"

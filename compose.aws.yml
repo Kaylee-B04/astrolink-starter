@@ -15,8 +15,10 @@ services:
     environment:
       SECRET_KEY: ${SECRET_KEY:?SECRET_KEY is required}
       DATABASE_URL: postgresql+psycopg2://astrolink:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@db:5432/astrolink
-    depends_on:
+    depends_on:   # Existing web configuration
       db:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     restart: unless-stopped
 
@@ -32,6 +34,17 @@ services:
       test: ["CMD-SHELL", "pg_isready -U astrolink -d astrolink"]
       interval: 5s
       timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # Shared storage for login rate limiting.
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
       retries: 5
     restart: unless-stopped
 

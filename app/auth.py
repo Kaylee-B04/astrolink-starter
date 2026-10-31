@@ -12,6 +12,7 @@ Notice what this does NOT do (these are things teams build):
 from flask import Blueprint, render_template, redirect, url_for, flash, request, abort
 from flask_login import login_user, logout_user, login_required, current_user
 from app.models import db, User, LoginLog
+from app import limiter
 
 auth_bp = Blueprint("auth", __name__)
 
@@ -31,6 +32,7 @@ def home():
 
 
 @auth_bp.route("/login", methods=["GET", "POST"])
+@limiter.limit("5 per minute", methods=["POST"])
 def login():
     if current_user.is_authenticated:
         return redirect(url_for("auth.home"))
