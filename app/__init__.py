@@ -18,6 +18,12 @@ def create_app():
     )
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
+    # Restrict when browsers send session cookies from other websites.
+    app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+
+    # Prevent JavaScript from directly reading session cookies.
+    app.config["SESSION_COOKIE_HTTPONLY"] = True
+
     db.init_app(app)
     bcrypt.init_app(app)
 
