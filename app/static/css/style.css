@@ -321,3 +321,28 @@ tr:last-child td { border-bottom: none; }
     nav { padding: 0 16px; gap: 16px; }
     main { padding: 24px 16px; }
 }
+
+/* Admin login history dashboard */
+.login-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.login-table th,
+.login-table td {
+    padding: 14px;
+    text-align: left;
+    border-bottom: 1px solid #292929;
+}
+
+.login-table th {
+    color: #00bcd4;
+}
+
+.login-table .success {
+    color: #4ade80;
+}
+
+.login-table .failed {
+    color: #f87171;
+}
