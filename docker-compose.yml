@@ -6,6 +6,7 @@ services:
     environment:
       - SECRET_KEY=${SECRET_KEY:-change-this-to-something-random}
       - DATABASE_URL=postgresql+psycopg2://astrolink:astrolink@db:5432/astrolink
+      - RATELIMIT_STORAGE_URI=memory://
     depends_on:
       db:
         condition: service_healthy

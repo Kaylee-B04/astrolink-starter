@@ -16,6 +16,12 @@
             
             <div class="nav-links">
                 <a href="/stations">Stations</a>
+                <a href="/commands">Send Command</a>
+
+                
+                {% if current_user.role in ("admin", "operator") %}
+                <a href="/command-log">Command Log</a>
+                {% endif %}
 
                 <!-- Only administrators can see the Login History link. -->
                 {% if current_user.is_admin %}

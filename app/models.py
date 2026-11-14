@@ -42,7 +42,8 @@ class User(UserMixin, db.Model):
 
     # Only administrators can access sensitive management features.
     is_admin = db.Column(db.Boolean, nullable=False, default=False)
-
+    # Permission level: "admin", "operator", or "viewer"
+    role = db.Column(db.String(20), nullable=False, default="viewer")
     def set_password(self, password):
         self.password_hash = bcrypt.generate_password_hash(password).decode("utf-8")
 
