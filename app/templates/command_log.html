@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header">
+  <h1>Command Log</h1>
+  <p>Every command attempt, newest first.</p>
+</div>
+
+<section class="panel">
+  <table>
+    <tr><th>Time (UTC)</th><th>User</th><th>Satellite</th><th>Command</th><th>Parameter</th><th>Status</th><th>Result</th><th>IP</th></tr>
+    {% for log in logs %}
+    <tr>
+      <td>{{ log.timestamp.strftime("%Y-%m-%d %H:%M:%S") if log.timestamp else "" }}</td>
+      <td>{{ log.user.username if log.user else "unknown (shared password)" }}</td>
+      <td>{{ log.satellite.name if log.satellite else "" }}</td>
+      <td>{{ log.command_type }}</td>
+      <td>{{ log.parameter or "" }}</td>
+      <td>{{ log.status }}</td>
+      <td>{{ log.description or "" }}</td>
+      <td>{{ log.ip_address or "" }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+</section>
+{% endblock %}
