@@ -18,7 +18,7 @@ CONFIRM_RISKS = {"high", "critical"}
 
 
 def log_command(sat, command_type, parameter, status, description):
-    """Record every command attempt: executed, failed, or blocked."""
+    """Record every command attempt: executed, failed, blocked, pending, or rejected."""
     entry = CommandLog(
         satellite_id=sat.id,
         user_id=current_user.id,
@@ -65,7 +65,22 @@ def send_command():
             flash(f"This is a {risk}-risk command. Type '{sat.name}' exactly to confirm.", "danger")
             return redirect(url_for("commands.send_command"))
 
-        # All checks passed: send it.
+        # Check 3 (Option A): require admin approval for operator orbit_adjust requests
+        if command_type == "orbit_adjust" and current_user.role != "admin":
+            log_command(
+                sat,
+                command_type,
+                parameter,
+                "pending",
+                f"Awaiting admin approval ({parameter} km adjustment on {sat.name})",
+            )
+            flash(
+                f"Orbit adjustment for {sat.name} queued for administrator approval.",
+                "warning",
+            )
+            return redirect(url_for("commands.send_command"))
+
+        # All checks passed: execute immediately.
         try:
             result = execute_command(sat, command_type, parameter)
             log_command(sat, command_type, parameter, "executed", result)
@@ -81,10 +96,6 @@ def send_command():
 
         return redirect(url_for("commands.send_command"))
 
-        log_command(sat, command_type, parameter, "executed", result)
-        flash(result, "success")
-        return redirect(url_for("commands.send_command"))
-
     satellites = Satellite.query.order_by(Satellite.name).all()
     return render_template("send_command.html", satellites=satellites,
                            commands=COMMANDS, allowed=allowed,
@@ -98,3 +109,55 @@ def command_log():
         abort(403)
     logs = CommandLog.query.order_by(CommandLog.timestamp.desc()).limit(200).all()
     return render_template("command_log.html", logs=logs)
+
+
+@commands_bp.route("/command-log/<int:log_id>/approve", methods=["POST"])
+@login_required
+def approve_command(log_id):
+    if current_user.role != "admin":
+        abort(403)
+
+    entry = db.session.get(CommandLog, log_id)
+    if entry is None:
+        abort(404)
+
+    if entry.status != "pending":
+        flash("This command has already been processed.", "warning")
+        return redirect(url_for("commands.command_log"))
+
+    sat = entry.satellite
+    try:
+        result = execute_command(sat, entry.command_type, entry.parameter)
+        entry.status = "executed"
+        entry.description = f"{result} (Approved by {current_user.username})"
+        db.session.commit()
+        flash(f"Approved & executed: {result}", "success")
+    except ValueError as e:
+        db.session.rollback()
+        entry.status = "failed"
+        entry.description = f"Approval failed: {e} (Reviewed by {current_user.username})"
+        db.session.commit()
+        flash(f"Cannot execute pending command: {e}", "danger")
+
+    return redirect(url_for("commands.command_log"))
+
+
+@commands_bp.route("/command-log/<int:log_id>/reject", methods=["POST"])
+@login_required
+def reject_command(log_id):
+    if current_user.role != "admin":
+        abort(403)
+
+    entry = db.session.get(CommandLog, log_id)
+    if entry is None:
+        abort(404)
+
+    if entry.status != "pending":
+        flash("This command has already been processed.", "warning")
+        return redirect(url_for("commands.command_log"))
+
+    entry.status = "rejected"
+    entry.description = f"Rejected by admin {current_user.username}"
+    db.session.commit()
+    flash(f"Rejected command #{entry.id} for {entry.satellite.name}.", "info")
+    return redirect(url_for("commands.command_log"))

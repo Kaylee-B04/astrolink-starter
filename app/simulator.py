@@ -41,8 +41,8 @@ COMMANDS = {
     "orbit_adjust": {
         "label": "Adjust orbit",
         "risk": "high",
-        "parameter": "change in km, -30 to 30 (e.g. -15)",
-        "what_it_does": "Fires thrusters to move the satellite up or down. Burns fuel that can never be refilled. Too low = burns up in the atmosphere.",
+        "parameter": "change in km, -10 to 10 (e.g. -5)",
+        "what_it_does": "Fires thrusters to move the satellite up or down (max ±10 km). Burns fuel that can never be refilled. Cannot drop below 400 km.",
     },
     "firmware_update": {
         "label": "Update firmware",
@@ -104,16 +104,20 @@ def execute_command(satellite, command_type, parameter=None):
         result = f"{name} power mode set to {p}"
 
     elif command_type == "orbit_adjust":
-        delta = _number(p, -30, 30, "Orbit change")
+        #hard altitude floor and max 2 burns/hour
+        delta = _number(p, -10, 10, "Orbit change")
+        new_altitude = round(satellite.orbit_altitude_km + delta, 1)
+        if new_altitude < MIN_SAFE_ALTITUDE_KM:
+            raise ValueError(
+                f"Blocked: {new_altitude} km is below the {MIN_SAFE_ALTITUDE_KM} km safe floor."
+            )
         fuel_cost = abs(delta) * 0.5
         if satellite.fuel_remaining_pct < fuel_cost:
             raise ValueError(f"{name} doesn't have enough fuel for this burn")
         old = satellite.orbit_altitude_km
-        satellite.orbit_altitude_km = round(old + delta, 1)
+        satellite.orbit_altitude_km = new_altitude
         satellite.fuel_remaining_pct = round(satellite.fuel_remaining_pct - fuel_cost, 1)
         result = f"{name} altitude changed {old} km -> {satellite.orbit_altitude_km} km"
-        if satellite.orbit_altitude_km < MIN_SAFE_ALTITUDE_KM:
-            result += " -- WARNING: below safe altitude"
 
     elif command_type == "firmware_update":
         if not p:
