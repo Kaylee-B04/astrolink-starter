@@ -9,7 +9,7 @@ Notice what this does NOT do (these are things teams build):
   - expire sessions
 """
 
-from flask import Blueprint, render_template, redirect, url_for, flash, request, abort
+from flask import Blueprint, render_template, redirect, url_for, flash, request, abort, session
 from flask_login import login_user, logout_user, login_required, current_user
 from app.models import db, User, LoginLog
 from app import limiter
@@ -30,6 +30,15 @@ def home():
     """Placeholder page after login. Point this at your own tool's main page."""
     return render_template("home.html")
 
+@auth_bp.before_app_request
+def enforce_active_employment():
+    """Immediately kick out users whose employment_status changes mid-session."""
+    if current_user.is_authenticated and current_user.employment_status != "employed":
+        logout_user()
+        session.clear()
+        flash("Your access has been revoked.", "danger")
+        return redirect(url_for("auth.login"))
+
 
 @auth_bp.route("/login", methods=["GET", "POST"])
 @limiter.limit("5 per minute", methods=["POST"])
@@ -43,22 +52,32 @@ def login():
 
         user = User.query.filter_by(username=username).first()
 
-        if (    # Only allow active employees with valid credentials to log in.
-            user
-            and user.employment_status == "employed"
-            and user.check_password(password)
-        ):
-            log = LoginLog(     # Record the successful login attempt.
+        # Check password first so active and terminated accounts take the same response time
+        if user and user.check_password(password):
+            # Block former employees even if they know their old password
+            if user.employment_status != "employed":
+                log = LoginLog(
+                    username=username, ip_address=request.remote_addr, success=False
+                )
+                db.session.add(log)
+                db.session.commit()
+
+                flash("Invalid username or password.", "danger")
+                return render_template("login.html")
+
+            # Valid active employee — log success and start expiring session
+            log = LoginLog(
                 username=username, ip_address=request.remote_addr, success=True
             )
             db.session.add(log)
             db.session.commit()
 
             login_user(user)
+            session.permanent = True  # Ensures PERMANENT_SESSION_LIFETIME applies
             flash(f"Logged in as {user.display_name or user.username}.", "success")
             return redirect(url_for("auth.home"))
 
-        # Record failed logins, including attempts by former employees.
+        # Record failed logins for wrong passwords or unknown usernames
         log = LoginLog(username=username, ip_address=request.remote_addr, success=False)
         db.session.add(log)
         db.session.commit()
