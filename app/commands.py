@@ -68,11 +68,18 @@ def send_command():
         # All checks passed: send it.
         try:
             result = execute_command(sat, command_type, parameter)
+            log_command(sat, command_type, parameter, "executed", result)
+            flash(result, "success")
         except ValueError as e:
             db.session.rollback()
             log_command(sat, command_type, parameter, "failed", str(e))
             flash(str(e), "danger")
-            return redirect(url_for("commands.send_command"))
+        except Exception:
+            db.session.rollback()
+            log_command(sat, command_type, parameter, "failed", "Internal execution error")
+            flash("Command execution failed due to a system error.", "danger")
+
+        return redirect(url_for("commands.send_command"))
 
         log_command(sat, command_type, parameter, "executed", result)
         flash(result, "success")
