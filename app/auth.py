@@ -8,8 +8,8 @@ Notice what this does NOT do (these are things teams build):
   - record logins anywhere
   - expire sessions
 """
-
-from flask import Blueprint, render_template, redirect, url_for, flash, request, abort, session
+from datetime import datetime, timezone, timedelta
+from flask import Blueprint, render_template, redirect, url_for, flash, request, abort, session, current_app
 from flask_login import login_user, logout_user, login_required, current_user
 from app.models import db, User, LoginLog
 from app import limiter
@@ -30,14 +30,32 @@ def home():
     """Placeholder page after login. Point this at your own tool's main page."""
     return render_template("home.html")
 
+SESSION_TIMEOUT = timedelta(minutes=15)
+
 @auth_bp.before_app_request
 def enforce_active_employment():
-    """Immediately kick out users whose employment_status changes mid-session."""
-    if current_user.is_authenticated and current_user.employment_status != "employed":
-        logout_user()
-        session.clear()
-        flash("Your access has been revoked.", "danger")
-        return redirect(url_for("auth.login"))
+    # Allow session cookies over plain HTTP when testing locally without modifying __init__.py
+    if request.host.startswith(("localhost", "127.0.0.1")) and not request.is_secure:
+        current_app.config["SESSION_COOKIE_SECURE"] = False
+    """Kick out terminated users or sessions idle longer than 15 minutes."""
+    if current_user.is_authenticated:
+        # 1. Check active employment
+        if current_user.employment_status != "employed":
+            logout_user()
+            session.clear()
+            flash("Your access has been revoked.", "danger")
+            return redirect(url_for("auth.login"))
+
+        # 2. Enforce 15-minute idle session timeout
+        now = datetime.now(timezone.utc)
+        last_active = session.get("last_active")
+        if last_active and (now - datetime.fromisoformat(last_active)) > SESSION_TIMEOUT:
+            logout_user()
+            session.clear()
+            flash("Your session expired due to inactivity. Please log in again.", "warning")
+            return redirect(url_for("auth.login"))
+
+        session["last_active"] = now.isoformat()
 
 
 @auth_bp.route("/login", methods=["GET", "POST"])
@@ -73,6 +91,7 @@ def login():
             db.session.commit()
 
             login_user(user)
+            session["last_active"] = datetime.now(timezone.utc).isoformat()
             session.permanent = True  # Ensures PERMANENT_SESSION_LIFETIME applies
             flash(f"Logged in as {user.display_name or user.username}.", "success")
             return redirect(url_for("auth.home"))
