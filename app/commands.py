@@ -101,6 +101,11 @@ def send_command():
                            commands=COMMANDS, allowed=allowed,
                            confirm_risks=CONFIRM_RISKS)
 
+@commands_bp.route("/command-log")
+@login_required
+def command_log():
+    logs = CommandLog.query.order_by(CommandLog.timestamp.desc()).limit(200).all()
+    return render_template("command_log.html", logs=logs)
 
 @commands_bp.route("/command-log/<int:log_id>/approve", methods=["GET", "POST"])
 @login_required
