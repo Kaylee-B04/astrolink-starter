@@ -102,16 +102,7 @@ def send_command():
                            confirm_risks=CONFIRM_RISKS)
 
 
-@commands_bp.route("/command-log")
-@login_required
-def command_log():
-    if current_user.role not in ("admin", "operator"):
-        abort(403)
-    logs = CommandLog.query.order_by(CommandLog.timestamp.desc()).limit(200).all()
-    return render_template("command_log.html", logs=logs)
-
-
-@commands_bp.route("/command-log/<int:log_id>/approve", methods=["POST"])
+@commands_bp.route("/command-log/<int:log_id>/approve", methods=["GET", "POST"])
 @login_required
 def approve_command(log_id):
     if current_user.role != "admin":
@@ -121,11 +112,38 @@ def approve_command(log_id):
     if entry is None:
         abort(404)
 
+    # Prevent self-approval of pending requests
+    if entry.user_id == current_user.id:
+        flash("You cannot approve your own pending command.", "danger")
+        return redirect(url_for("commands.command_log"))
+
     if entry.status != "pending":
         flash("This command has already been processed.", "warning")
         return redirect(url_for("commands.command_log"))
 
     sat = entry.satellite
+
+    # GET: Render the confirmation page with projected orbital telemetry
+    if request.method == "GET":
+        projected_altitude = None
+        fuel_cost = None
+        if entry.command_type == "orbit_adjust" and entry.parameter:
+            try:
+                delta = float(entry.parameter)
+                projected_altitude = round(sat.orbit_altitude_km + delta, 1)
+                fuel_cost = round(abs(delta) * 0.5, 1)
+            except ValueError:
+                pass
+
+        return render_template(
+            "confirm_approve.html",
+            entry=entry,
+            sat=sat,
+            projected_altitude=projected_altitude,
+            fuel_cost=fuel_cost,
+        )
+
+    # POST: Admin confirmed — execute the command
     try:
         result = execute_command(sat, entry.command_type, entry.parameter)
         entry.status = "executed"
