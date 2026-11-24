@@ -42,6 +42,17 @@ class User(UserMixin, db.Model):
 
     # Only administrators can access sensitive management features.
     is_admin = db.Column(db.Boolean, nullable=False, default=False)
+    
+        # Two-factor authentication
+    totp_secret = db.Column(db.String(32), nullable=True)
+    is_2fa_enabled = db.Column(db.Boolean, nullable=False, default=False)
+
+    @property
+    def is_active(self):
+        # Flask-Login refuses to log in anyone who isn't active, so former
+        # employees are blocked here too, not only in auth.py.
+        return self.employment_status == "employed"
+    
     # Permission level: "admin", "operator", or "viewer"
     role = db.Column(db.String(20), nullable=False, default="viewer")
     def set_password(self, password):

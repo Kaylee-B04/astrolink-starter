@@ -16,5 +16,6 @@ with app.app_context():
         user = User.query.filter_by(username=username).first()
         if user:
             user.role = role
+            user.is_admin = (role == "admin")   # needed for the Login History page; unauthorized cannot open Login History
             print(f"{username} -> {role}")
     db.session.commit()

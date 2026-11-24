@@ -4,6 +4,7 @@ You shouldn't need to change this file.
 """
 
 import os
+from datetime import timedelta
 from flask import Flask
 from flask_login import LoginManager
 from app.models import db, bcrypt, User
@@ -37,6 +38,9 @@ def create_app():
 
     # Require HTTPS when sending login session cookies.
     app.config["SESSION_COOKIE_SECURE"] = True
+
+    # Log users out after 30 minutes without activity.
+    app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(minutes=30)
 
     # Use Redis in production, but allow isolated tests to use other storage.
     app.config["RATELIMIT_STORAGE_URI"] = os.environ.get(
