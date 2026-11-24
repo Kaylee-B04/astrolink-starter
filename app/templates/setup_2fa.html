@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title_extra %} — Set up 2FA{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-box">
+        <h1>Set Up 2FA</h1>
+        <p class="auth-subtitle">
+            Scan this QR code with an authenticator app (Google Authenticator,
+            Authy, 1Password, etc.), then enter the 6-digit code it shows.
+        </p>
+
+        <img src="data:image/png;base64,{{ qr_b64 }}" alt="2FA QR code"
+             style="max-width: 100%; background: #fff; padding: 8px;">
+        <p>Can't scan? Enter this key manually: <code>{{ secret }}</code></p>
+
+        <form method="POST">
+            <!-- Verify that this request comes from our form. -->
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="form-group">
+                <label for="code">Code</label>
+                <input type="text" id="code" name="code" required
+                       inputmode="numeric" autocomplete="one-time-code"
+                       pattern="[0-9]{6}" maxlength="6">
+            </div>
+            <button type="submit" class="btn btn-primary btn-full">Enable 2FA</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

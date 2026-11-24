@@ -6,13 +6,20 @@ Run:  docker compose exec web python seed.py
 WARNING: this wipes the database and reloads everything.
 """
 
+import os
 import random
 from datetime import datetime, timedelta, timezone
+
+import pyotp
+from dotenv import load_dotenv
+
 from app import create_app, db
 from app.models import (
     User, Satellite, GroundStation, TelemetryReading,
     CommandLog, Subscriber, LegacyAccessLog,
 )
+
+load_dotenv()  # reads .env so the TOTP_SECRET_* values below are available
 
 random.seed(42)  # same data every time
 
@@ -32,16 +39,35 @@ def seed():
         # ---------------- USERS ----------------
         accounts = [
             # username, password, name, job title, employment status
-            ("admin", "spaceadmin123", "Alex Rivera", "Head of Operations", "employed"),
-            ("jchen", "operator123", "Jordan Chen", "Senior Operator", "employed"),
-            ("mkowalski", "operator123", "Morgan Kowalski", "Operator", "employed"),
-            ("intern22", "intern12345", "Casey Park", "Intern", "employed"),
-            ("tgarcia", "operator123", "Taylor Garcia", "Operator", "left"),  # left 3 weeks ago
+            ("admin", "team6admin123456", "Alex Rivera", "Head of Operations", "employed"),
+            ("jchen", "operator123456", "Jordan Chen", "Senior Operator", "employed"),
+            ("mkowalski", "operator123456", "Morgan Kowalski", "Operator", "employed"),
+            ("intern22", "intern123456", "Casey Park", "Intern", "employed"),
+            ("tgarcia", "operator123456", "Taylor Garcia", "Operator", "left"),  # left 3 weeks ago
         ]
         users = {}
+        preenrolled = []
         for username, pw, name, title, status in accounts:
             u = User(username=username, display_name=name, job_title=title, employment_status=status)
             u.set_password(pw)
+
+            # Pre-enroll 2FA if this account has a secret in .env (TOTP_SECRET_ADMIN, ...).
+            # Accounts without one stay un-enrolled and are made to set up 2FA at first login.
+            # Former employees are never enrolled.
+            key = f"TOTP_SECRET_{username.upper()}"
+            secret = os.environ.get(key, "").strip().replace(" ", "")
+            if secret and status == "employed":
+                try:
+                    pyotp.TOTP(secret).now()   # raises if it isn't valid base32
+                except Exception:
+                    raise SystemExit(f"{key} in .env is not a valid base32 secret. "
+                                     "Generate one with: python totp_helper.py gen")
+                if len(secret) > 32:
+                    raise SystemExit(f"{key} in .env is too long (max 32 characters).")
+                u.totp_secret = secret
+                u.is_2fa_enabled = True
+                preenrolled.append(username)
+
             db.session.add(u)
             users[username] = u
 
@@ -210,8 +236,10 @@ def seed():
             print(f"  {username:<10} / {pw:<14} {title}{note}")
         print(f"\n  {len(sats)} satellites, {len(stations)} ground stations, {telemetry_count} telemetry readings")
         print(f"  {len(commands)} commands, 40 subscribers, {len(access)} legacy access log entries")
+        print(f"\n  2FA pre-enrolled: {', '.join(preenrolled) if preenrolled else 'nobody (accounts enroll at first login)'}")
         print("\nOpen http://localhost:8000 and log in.")
 
 
 if __name__ == "__main__":
     seed()
+    

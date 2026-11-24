@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title_extra %} — Verify{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-box">
+        <h1>Two-Factor Verification</h1>
+        <p class="auth-subtitle">Enter the 6-digit code from your authenticator app.</p>
+
+        <form method="POST">
+            <!-- Verify that this request comes from our form. -->
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="form-group">
+                <label for="code">Code</label>
+                <input type="text" id="code" name="code" required autofocus
+                       inputmode="numeric" autocomplete="one-time-code"
+                       pattern="[0-9]{6}" maxlength="6">
+            </div>
+            <button type="submit" class="btn btn-primary btn-full">Verify</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
