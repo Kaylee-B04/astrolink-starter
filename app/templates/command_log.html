@@ -7,7 +7,17 @@
 
 <section class="panel">
   <table>
-    <tr><th>Time (UTC)</th><th>User</th><th>Satellite</th><th>Command</th><th>Parameter</th><th>Status</th><th>Result</th><th>IP</th></tr>
+    <tr>
+      <th>Time (UTC)</th>
+      <th>User</th>
+      <th>Satellite</th>
+      <th>Command</th>
+      <th>Parameter</th>
+      <th>Status</th>
+      <th>Actions</th>
+      <th>Result</th>
+      <th>IP</th>
+    </tr>
     {% for log in logs %}
     <tr>
       <td>{{ log.timestamp.strftime("%Y-%m-%d %H:%M:%S") if log.timestamp else "" }}</td>
@@ -16,6 +26,23 @@
       <td>{{ log.command_type }}</td>
       <td>{{ log.parameter or "" }}</td>
       <td>{{ log.status }}</td>
+      <td>
+        {% if log.status == "pending" and current_user.role == "admin" and log.user_id != current_user.id %}
+          <div style="display: flex; gap: 6px;">
+            <a href="{{ url_for('commands.approve_command', log_id=log.id) }}" class="btn btn-sm btn-success">Review &amp; Approve</a>
+            <form method="POST" action="{{ url_for('commands.reject_command', log_id=log.id) }}" style="margin: 0;">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="submit" class="btn btn-sm btn-danger">Reject</button>
+            </form>
+          </div>
+        {% elif log.status == "pending" and log.user_id == current_user.id %}
+          <span>Awaiting another admin</span>
+        {% elif log.status == "pending" %}
+          <span>Pending admin review</span>
+        {% else %}
+          <span>—</span>
+        {% endif %}
+      </td>
       <td>{{ log.description or "" }}</td>
       <td>{{ log.ip_address or "" }}</td>
     </tr>

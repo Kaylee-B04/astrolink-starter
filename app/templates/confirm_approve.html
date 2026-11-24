@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header">
+  <h1>Confirm Command Approval</h1>
+  <p>Review the satellite telemetry and maneuver impact before executing.</p>
+</div>
+
+<section class="panel" style="max-width: 600px;">
+  <table>
+    <tr>
+      <th>Request ID</th>
+      <td>#{{ entry.id }}</td>
+    </tr>
+    <tr>
+      <th>Requested By</th>
+      <td>{{ entry.user.username if entry.user else "Unknown" }}</td>
+    </tr>
+    <tr>
+      <th>Timestamp (UTC)</th>
+      <td>{{ entry.timestamp.strftime("%Y-%m-%d %H:%M:%S") if entry.timestamp else "" }}</td>
+    </tr>
+    <tr>
+      <th>Satellite</th>
+      <td>{{ sat.name }} ({{ sat.status }})</td>
+    </tr>
+    <tr>
+      <th>Command</th>
+      <td>{{ entry.command_type }}</td>
+    </tr>
+    <tr>
+      <th>Parameter</th>
+      <td>{{ entry.parameter or "None" }}</td>
+    </tr>
+    {% if projected_altitude is not none %}
+    <tr>
+      <th>Current Altitude</th>
+      <td>{{ sat.orbit_altitude_km }} km</td>
+    </tr>
+    <tr>
+      <th>Projected Altitude</th>
+      <td><strong>{{ projected_altitude }} km</strong> (Safe floor: 400.0 km)</td>
+    </tr>
+    <tr>
+      <th>Fuel Remaining</th>
+      <td>{{ sat.fuel_remaining_pct }}% (Burn cost: {{ fuel_cost }}%)</td>
+    </tr>
+    {% endif %}
+  </table>
+
+  <div style="display: flex; gap: 10px; margin-top: 20px;">
+    <form method="POST" action="{{ url_for('commands.approve_command', log_id=entry.id) }}" style="margin: 0;">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="btn btn-success">Confirm &amp; Execute</button>
+    </form>
+
+    <form method="POST" action="{{ url_for('commands.reject_command', log_id=entry.id) }}" style="margin: 0;">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="btn btn-danger">Reject Request</button>
+    </form>
+
+    <a href="{{ url_for('commands.command_log') }}" class="btn">Cancel</a>
+  </div>
+</section>
+{% endblock %}
